@@ -861,15 +861,8 @@
 
             // 检查是否是最后一扇门
             if (sceneIndex === sceneOrder.length - 1) {
-                // 检查是否收集了所有物品
-                const totalItems = Object.values(allItems).flat().length;
-                const collectedItems = Object.values(inventory).flat().length;
-                
-                if (collectedItems >= totalItems) {
-                    showScreen('gameOver');
-                } else {
-                    alert(`你还有 ${totalItems - collectedItems} 个物品未收集！`);
-                }
+                // 直接显示游戏结束，允许收集部分物品后通关
+                showScreen('gameOver');
             } else {
                 // 进入下一个场景
                 currentSceneIndex = sceneIndex + 1;
