@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>探索搜索小游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* 主界面样式 */
+        #main-screen {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .title-container {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .game-title {
+            font-size: 64px;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            margin-bottom: 20px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
+            to { text-shadow: 0 0 30px rgba(255, 255, 255, 0.8), 0 0 60px rgba(102, 126, 234, 0.5); }
+        }
+
+        .game-subtitle {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .main-buttons {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .main-btn {
+            padding: 20px 60px;
+            font-size: 24px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #start-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            box-shadow: 0 10px 30px rgba(238, 90, 82, 0.4);
+        }
+
+        #start-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(238, 90, 82, 0.6);
+        }
+
+        #inventory-btn {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            box-shadow: 0 10px 30px rgba(78, 205, 196, 0.4);
+        }
+
+        #inventory-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(78, 205, 196, 0.6);
+        }
+
+        /* 场景样式 */
+        .scene {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .scene-header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 40px;
+            border-radius: 30px;
+            color: white;
+            font-size: 28px;
+            z-index: 100;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .scene-items {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 40px;
+            padding: 100px 50px;
+        }
+
+        /* 卧室场景 */
+        #bedroom-scene {
+            background: linear-gradient(180deg, #f8b195 0%, #f67280 100%);
+        }
+
+        /* 厨房场景 */
+        #kitchen-scene {
+            background: linear-gradient(180deg, #a8edea 0%, #fed6e3 100%);
+        }
+
+        /* 卫生间场景 */
+        #bathroom-scene {
+            background: linear-gradient(180deg, #d299c2 0%, #fef9d7 100%);
+        }
+
+        /* 容器样式 */
+        .container {
+            width: 150px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .container:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .container.searched {
+            opacity: 0.6;
+        }
+
+        .container-icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+
+        .container-name {
+            font-size: 18px;
+            color: #333;
+            text-align: center;
+        }
+
+        .search-indicator {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: pulse 1.5s ease-in-out infinite;
+            box-shadow: 0 5px 20px rgba(238, 90, 82, 0.5);
+        }
+
+        .search-indicator::after {
+            content: '🔍';
+            font-size: 24px;
+        }
+
+        .container.searched .search-indicator {
+            display: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* 门样式 */
+        .door {
+            width: 120px;
+            height: 200px;
+            background: linear-gradient(45deg, #8b4513, #a0522d);
+            border-radius: 10px 10px 0 0;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .door:hover {
+            transform: scale(1.05);
+        }
+
+        .door::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            width: 15px;
+            height: 15px;
+            background: gold;
+            border-radius: 50%;
+            transform: translateY(-50%);
+        }
+
+        .door-label {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        /* 仓库界面 */
+        #inventory-screen {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+
+        .inventory-title {
+            font-size: 48px;
+            color: white;
+            margin-bottom: 40px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 20px;
+            max-width: 800px;
+            width: 90%;
+            padding: 20px;
+        }
+
+        .inventory-slot {
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .inventory-slot.filled {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .inventory-slot.filled:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .item-icon {
+            font-size: 40px;
+            margin-bottom: 5px;
+        }
+
+        .item-name {
+            font-size: 12px;
+            color: white;
+            text-align: center;
+        }
+
+        /* 颜色分类标签 */
+        .color-category {
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .color-title {
+            font-size: 24px;
+            color: white;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid;
+        }
+
+        .color-title.red { border-left-color: #ff6b6b; }
+        .color-title.gold { border-left-color: #ffd700; }
+        .color-title.blue { border-left-color: #4ecdc4; }
+        .color-title.green { border-left-color: #95e1d3; }
+
+        /* 游戏结束界面 */
+        #game-over-screen {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .congratulations {
+            font-size: 56px;
+            color: white;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .game-over-message {
+            font-size: 28px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 50px;
+            text-align: center;
+        }
+
+        .restart-btn {
+            padding: 20px 60px;
+            font-size: 24px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(238, 90, 82, 0.4);
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(238, 90, 82, 0.6);
+        }
+
+        /* 物品发现弹窗 */
+        .item-found-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .item-found-modal.show {
+            display: block;
+            animation: modalShow 0.3s ease;
+        }
+
+        @keyframes modalShow {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .modal-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 32px;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .modal-item {
+            font-size: 24px;
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+
+        .modal-btn {
+            padding: 10px 40px;
+            font-size: 18px;
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+            display: none;
+        }
+
+        .modal-overlay.show {
+            display: block;
+        }
+
+        /* 提示信息 */
+        .hint {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- 主界面 -->
+        <div id="main-screen" class="screen active">
+            <div class="title-container">
+                <h1 class="game-title">🏠 探索搜索小游戏</h1>
+                <p class="game-subtitle">探索各个房间，收集神秘物品，完成你的收藏！</p>
+            </div>
+            <div class="main-buttons">
+                <button id="start-btn" class="main-btn">🚀 开始探索</button>
+                <button id="inventory-btn" class="main-btn">📦 我的仓库</button>
+            </div>
+        </div>
+
+        <!-- 卧室场景 -->
+        <div id="bedroom-scene" class="screen">
+            <div class="scene">
+                <div class="scene-header">🛏️ 卧室</div>
+                <button id="bedroom-back" class="back-btn">← 返回主界面</button>
+                
+                <div class="scene-items">
+                    <!-- 衣柜 -->
+                    <div class="container" data-container="wardrobe" data-scene="bedroom">
+                        <div class="container-icon">🚪</div>
+                        <div class="container-name">衣柜</div>
+                        <div class="search-indicator"></div>
+                    </div>
+                    
+                    <!-- 垃圾桶 -->
+                    <div class="container" data-container="trash" data-scene="bedroom">
+                        <div class="container-icon">🗑️</div>
+                        <div class="container-name">垃圾桶</div>
+                        <div class="search-indicator"></div>
+                    </div>
+                    
+                    <!-- 电脑 -->
+                    <div class="container" data-container="computer" data-scene="bedroom">
+                        <div class="container-icon">💻</div>
+                        <div class="container-name">电脑</div>
+                        <div class="search-indicator"></div>
+                    </div>
+                    
+                    <!-- 门 -->
+                    <div class="door" data-door="bedroom">
+                        <div class="door-label">通往厨房 →</div>
+                    </div>
+                </div>
+                
+                <div class="hint">提示：点击带有搜索图标的容器来寻找物品</div>
+            </div>
+        </div>
+
+        <!-- 厨房场景 -->
+        <div id="kitchen-scene" class="screen">
+            <div class="scene">
+                <div class="scene-header">🍳 厨房</div>
+                <button id="kitchen-back" class="back-btn">← 返回</button>
+                
+                <div class="scene-items">
+                    <!-- 冰箱 -->
+                    <div class="container" data-container="fridge" data-scene="kitchen">
+                        <div class="container-icon">🧊</div>
+                        <div class="container-name">冰箱</div>
+                        <div class="search-indicator"></div>
+                    </div>
+                    
+                    <!-- 橱柜 -->
+                    <div class="container" data-container="cabinet" data-scene="kitchen">
+                        <div class="container-icon">🗄️</div>
+                        <div class="container-name">橱柜</div>
+                        <div class="search-indicator"></div>
+                    </div>
+                    
+                    <!-- 储物柜 -->
+                    <div class="container" data-container="storage" data-scene="kitchen">
+                        <div class="container-icon">📦</div>
+                        <div class="container-name">储物柜</div>
+                        <div class="search-indicator"></div>
+                    </div>
+                    
+                    <!-- 门 -->
+                    <div class="door" data-door="kitchen">
+                        <div class="door-label">通往卫生间 →</div>
+                    </div>
+                </div>
+                
+                <div class="hint">提示：每个容器中可能藏有不同颜色的物品</div>
+            </div>
+        </div>
+
+        <!-- 卫生间场景 -->
+        <div id="bathroom-scene" class="screen">
+            <div class="scene">
+                <div class="scene-header">🚿 卫生间</div>
+                <button id="bathroom-back" class="back-btn">← 返回</button>
+                
+                <div class="scene-items">
+                    <!-- 洗脸盆 -->
+                    <div class="container" data-container="sink" data-scene="bathroom">
+                        <div class="container-icon">🚰</div>
+                        <div class="container-name">洗脸盆</div>
+                        <div class="search-indicator"></div>
+                    </div>
+                    
+                    <!-- 橱柜 -->
+                    <div class="container" data-container="cabinet" data-scene="bathroom">
+                        <div class="container-icon">🗄️</div>
+                        <div class="container-name">橱柜</div>
+                        <div class="search-indicator"></div>
+                    </div>
+                    
+                    <!-- 卫生柜 -->
+                    <div class="container" data-container="medicine" data-scene="bathroom">
+                        <div class="container-icon">💊</div>
+                        <div class="container-name">卫生柜</div>
+                        <div class="search-indicator"></div>
+                    </div>
+                    
+                    <!-- 门（最后一扇门） -->
+                    <div class="door" data-door="bathroom">
+                        <div class="door-label">出口 🚪</div>
+                    </div>
+                </div>
+                
+                <div class="hint">提示：找到所有物品后，推开最后一扇门完成游戏</div>
+            </div>
+        </div>
+
+        <!-- 仓库界面 -->
+        <div id="inventory-screen" class="screen">
+            <div class="scene">
+                <div class="scene-header">📦 我的仓库</div>
+                <button id="inventory-back" class="back-btn">← 返回主界面</button>
+                
+                <div style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 900px; padding: 100px 20px 20px; overflow-y: auto; max-height: 80vh;">
+                    <!-- 红色物品 -->
+                    <div class="color-category">
+                        <h3 class="color-title red">🔴 红色物品</h3>
+                        <div class="inventory-grid" id="red-items"></div>
+                    </div>
+                    
+                    <!-- 金色物品 -->
+                    <div class="color-category">
+                        <h3 class="color-title gold">🟡 金色物品</h3>
+                        <div class="inventory-grid" id="gold-items"></div>
+                    </div>
+                    
+                    <!-- 蓝色物品 -->
+                    <div class="color-category">
+                        <h3 class="color-title blue">🔵 蓝色物品</h3>
+                        <div class="inventory-grid" id="blue-items"></div>
+                    </div>
+                    
+                    <!-- 绿色物品 -->
+                    <div class="color-category">
+                        <h3 class="color-title green">🟢 绿色物品</h3>
+                        <div class="inventory-grid" id="green-items"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 游戏结束界面 -->
+        <div id="game-over-screen" class="screen">
+            <h1 class="congratulations">🎉 恭喜你完成探索！</h1>
+            <p class="game-over-message">你已经成功探索了所有房间<br>并完成了这次冒险！</p>
+            <button id="restart-btn" class="restart-btn">🔄 重新开始</button>
+        </div>
+
+        <!-- 物品发现弹窗 -->
+        <div class="modal-overlay" id="modal-overlay"></div>
+        <div class="item-found-modal" id="item-found-modal">
+            <div class="modal-icon" id="modal-icon">🎁</div>
+            <h2 class="modal-title">发现物品！</h2>
+            <p class="modal-item" id="modal-item-name">棉衣</p>
+            <button class="modal-btn" id="modal-close-btn">确定</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏数据
+        const gameData = {
+            bedroom: {
+                containers: {
+                    wardrobe: { item: { name: '棉衣', color: 'red', icon: '🧥' }, searched: false },
+                    trash: { item: { name: '腰带', color: 'gold', icon: '👔' }, searched: false },
+                    computer: { item: { name: '袜子', color: 'blue', icon: '🧦' }, searched: false }
+                },
+                hiddenItem: { name: '床单', color: 'green', icon: '🛏️' },
+                allSearched: false
+            },
+            kitchen: {
+                containers: {
+                    fridge: { item: { name: '电饭锅', color: 'red', icon: '🍚' }, searched: false },
+                    cabinet: { item: { name: '食用油', color: 'gold', icon: '🥜' }, searched: false },
+                    storage: { item: { name: '方便面', color: 'blue', icon: '🍜' }, searched: false }
+                },
+                hiddenItem: { name: '筷子', color: 'green', icon: '🥢' },
+                allSearched: false
+            },
+            bathroom: {
+                containers: {
+                    sink: { item: { name: '绷带', color: 'red', icon: '🩹' }, searched: false },
+                    cabinet: { item: { name: '洗面奶', color: 'gold', icon: '🧴' }, searched: false },
+                    medicine: { item: { name: '牙刷', color: 'blue', icon: '🪥' }, searched: false }
+                },
+                hiddenItem: { name: '卫生纸', color: 'green', icon: '🧻' },
+                allSearched: false
+            }
+        };
+
+        // 收集的物品
+        let inventory = {
+            red: [],
+            gold: [],
+            blue: [],
+            green: []
+        };
+
+        // 所有物品定义
+        const allItems = {
+            red: [
+                { name: '棉衣', icon: '🧥', scene: 'bedroom' },
+                { name: '电饭锅', icon: '🍚', scene: 'kitchen' },
+                { name: '绷带', icon: '🩹', scene: 'bathroom' }
+            ],
+            gold: [
+                { name: '腰带', icon: '👔', scene: 'bedroom' },
+                { name: '食用油', icon: '🥜', scene: 'kitchen' },
+                { name: '洗面奶', icon: '🧴', scene: 'bathroom' }
+            ],
+            blue: [
+                { name: '袜子', icon: '🧦', scene: 'bedroom' },
+                { name: '方便面', icon: '🍜', scene: 'kitchen' },
+                { name: '牙刷', icon: '🪥', scene: 'bathroom' }
+            ],
+            green: [
+                { name: '床单', icon: '🛏️', scene: 'bedroom' },
+                { name: '筷子', icon: '🥢', scene: 'kitchen' },
+                { name: '卫生纸', icon: '🧻', scene: 'bathroom' }
+            ]
+        };
+
+        // 场景顺序
+        const sceneOrder = ['bedroom', 'kitchen', 'bathroom'];
+        let currentSceneIndex = 0;
+
+        // DOM 元素
+        const screens = {
+            main: document.getElementById('main-screen'),
+            bedroom: document.getElementById('bedroom-scene'),
+            kitchen: document.getElementById('kitchen-scene'),
+            bathroom: document.getElementById('bathroom-scene'),
+            inventory: document.getElementById('inventory-screen'),
+            gameOver: document.getElementById('game-over-screen')
+        };
+
+        const startBtn = document.getElementById('start-btn');
+        const inventoryBtn = document.getElementById('inventory-btn');
+        const bedroomBack = document.getElementById('bedroom-back');
+        const kitchenBack = document.getElementById('kitchen-back');
+        const bathroomBack = document.getElementById('bathroom-back');
+        const inventoryBack = document.getElementById('inventory-back');
+        const restartBtn = document.getElementById('restart-btn');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const itemFoundModal = document.getElementById('item-found-modal');
+        const modalIcon = document.getElementById('modal-icon');
+        const modalItemName = document.getElementById('modal-item-name');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // 切换屏幕
+        function showScreen(screenName) {
+            Object.values(screens).forEach(screen => screen.classList.remove('active'));
+            screens[screenName].classList.add('active');
+        }
+
+        // 显示物品发现弹窗
+        function showItemModal(item) {
+            modalIcon.textContent = item.icon;
+            modalItemName.textContent = item.name;
+            modalOverlay.classList.add('show');
+            itemFoundModal.classList.add('show');
+        }
+
+        // 隐藏弹窗
+        function hideModal() {
+            modalOverlay.classList.remove('show');
+            itemFoundModal.classList.remove('show');
+        }
+
+        // 添加物品到仓库
+        function addToInventory(item) {
+            if (!inventory[item.color].find(i => i.name === item.name)) {
+                inventory[item.color].push(item);
+                showItemModal(item);
+            }
+        }
+
+        // 检查场景是否所有容器都已搜索
+        function checkAllSearched(sceneName) {
+            const scene = gameData[sceneName];
+            const containers = Object.values(scene.containers);
+            const allSearched = containers.every(c => c.searched);
+            
+            if (allSearched && !scene.allSearched) {
+                scene.allSearched = true;
+                addToInventory(scene.hiddenItem);
+            }
+        }
+
+        // 处理容器点击
+        function handleContainerClick(container) {
+            const sceneName = container.dataset.scene;
+            const containerName = container.dataset.container;
+            const sceneData = gameData[sceneName].containers[containerName];
+
+            if (sceneData.searched) {
+                return;
+            }
+
+            sceneData.searched = true;
+            container.classList.add('searched');
+
+            if (sceneData.item) {
+                addToInventory(sceneData.item);
+            }
+
+            checkAllSearched(sceneName);
+        }
+
+        // 处理门点击
+        function handleDoorClick(door) {
+            const sceneName = door.dataset.door;
+            const sceneIndex = sceneOrder.indexOf(sceneName);
+
+            // 检查当前场景是否所有容器都已搜索
+            const currentScene = gameData[sceneName];
+            const allContainersSearched = Object.values(currentScene.containers).every(c => c.searched);
+
+            if (!allContainersSearched) {
+                alert('请先搜索完这个场景的所有容器！');
+                return;
+            }
+
+            // 检查是否有隐藏物品（绿色物品）
+            const hasGreenItem = inventory.green.find(item => 
+                allItems.green.find(ai => ai.name === item.name && ai.scene === sceneName)
+            );
+
+            if (!hasGreenItem) {
+                alert('场景中还有隐藏物品未找到，继续探索吧！');
+                return;
+            }
+
+            // 如果是最后一扇门（卫生间的门）
+            if (sceneName === 'bathroom') {
+                // 检查是否收集了所有物品
+                const totalItems = Object.values(allItems).flat().length;
+                const collectedItems = Object.values(inventory).flat().length;
+                
+                if (collectedItems >= totalItems) {
+                    showScreen('gameOver');
+                } else {
+                    alert(`你还有 ${totalItems - collectedItems} 个物品未收集！`);
+                }
+            } else {
+                // 进入下一个场景
+                currentSceneIndex = sceneIndex + 1;
+                const nextScene = sceneOrder[currentSceneIndex];
+                showScreen(nextScene);
+            }
+        }
+
+        // 渲染仓库
+        function renderInventory() {
+            const colorMap = {
+                red: document.getElementById('red-items'),
+                gold: document.getElementById('gold-items'),
+                blue: document.getElementById('blue-items'),
+                green: document.getElementById('green-items')
+            };
+
+            Object.keys(colorMap).forEach(color => {
+                const container = colorMap[color];
+                container.innerHTML = '';
+
+                // 显示所有该颜色的物品位置
+                allItems[color].forEach(item => {
+                    const slot = document.createElement('div');
+                    slot.className = 'inventory-slot';
+
+                    const collectedItem = inventory[color].find(i => i.name === item.name);
+                    
+                    if (collectedItem) {
+                        slot.classList.add('filled');
+                        slot.innerHTML = `
+                            <div class="item-icon">${collectedItem.icon}</div>
+                            <div class="item-name">${collectedItem.name}</div>
+                        `;
+                    } else {
+                        slot.innerHTML = `
+                            <div class="item-icon">❓</div>
+                            <div class="item-name">未发现</div>
+                        `;
+                    }
+
+                    container.appendChild(slot);
+                });
+            });
+        }
+
+        // 初始化游戏
+        function initGame() {
+            // 开始按钮
+            startBtn.addEventListener('click', () => {
+                currentSceneIndex = 0;
+                showScreen('bedroom');
+            });
+
+            // 仓库按钮
+            inventoryBtn.addEventListener('click', () => {
+                renderInventory();
+                showScreen('inventory');
+            });
+
+            // 返回按钮
+            bedroomBack.addEventListener('click', () => showScreen('main'));
+            kitchenBack.addEventListener('click', () => {
+                currentSceneIndex = 0;
+                showScreen('bedroom');
+            });
+            bathroomBack.addEventListener('click', () => {
+                currentSceneIndex = 1;
+                showScreen('kitchen');
+            });
+            inventoryBack.addEventListener('click', () => showScreen('main'));
+
+            // 重新开始按钮
+            restartBtn.addEventListener('click', () => {
+                resetGame();
+                showScreen('main');
+            });
+
+            // 容器点击事件
+            document.querySelectorAll('.container').forEach(container => {
+                container.addEventListener('click', () => handleContainerClick(container));
+            });
+
+            // 门点击事件
+            document.querySelectorAll('.door').forEach(door => {
+                door.addEventListener('click', () => handleDoorClick(door));
+            });
+
+            // 弹窗关闭
+            modalCloseBtn.addEventListener('click', hideModal);
+            modalOverlay.addEventListener('click', hideModal);
+        }
+
+        // 重置游戏
+        function resetGame() {
+            // 重置游戏数据
+            Object.keys(gameData).forEach(scene => {
+                gameData[scene].allSearched = false;
+                Object.keys(gameData[scene].containers).forEach(container => {
+                    gameData[scene].containers[container].searched = false;
+                });
+            });
+
+            // 清空仓库
+            inventory = {
+                red: [],
+                gold: [],
+                blue: [],
+                green: []
+            };
+
+            // 重置UI
+            document.querySelectorAll('.container').forEach(container => {
+                container.classList.remove('searched');
+            });
+
+            currentSceneIndex = 0;
+        }
+
+        // 启动游戏
+        initGame();
+    </script>
+</body>
+</html>
